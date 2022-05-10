@@ -1,0 +1,29 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "type": "shell",
+            "label": "build active project",
+            "osx": {
+                "command": "g++",
+                "args": [
+                    "-F/Library/Frameworks",
+                    "-framework",
+                    "SDL2",
+                    "-I",
+                    "/Library/Frameworks/SDL2.framework/Headers",
+                    "-o${workspaceFolder}/bin/main.out",
+                    "-std=c++20",
+                    "${workspaceFolder}/src/**/*.cpp"
+                ],
+            },
+            "problemMatcher": [
+                "$msCompile"
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            }
+        }
+    ]
+}
