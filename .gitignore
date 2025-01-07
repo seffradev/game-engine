@@ -1,6 +1,8 @@
-bin/*
-!bin/assets/
+.xmake/
+build/
+.cache/
+compile_commands.json
+compile_flags.txt
 
-# macOS
+# MacOS Cache
 .DS_Store
-**/*/.DS_Store

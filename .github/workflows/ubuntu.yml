@@ -1,0 +1,54 @@
+name: Ubuntu CI/CD
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest]
+        arch: [x86_64]
+
+    runs-on: ${{ matrix.os }}
+
+    concurrency:
+      group: ${{ github.ref }}-${{ github.base_ref }}-${{ github.head_ref }}-${{ matrix.os }}-${{ matrix.arch }}-Linux
+      cancel-in-progress: true
+    
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: true
+    
+      - name: Setup xmake
+        uses: xmake-io/github-action-setup-xmake@v1
+        with:
+          xmake-version: latest
+            
+      - name: Use GCC
+        uses: Matt-DESTROYER/Use-GCC@v1.2
+ 
+      - name: Set xmake package cache path
+        run: echo "XMAKE_PKG_CACHEDIR=$(pwd)/xmake-cache" >> $GITHUB_ENV
+    
+      - name: Retrieve xmake cache for packages
+        uses: actions/cache@v4
+        with:
+          path: xmake-cache
+          key: ${{ matrix.os }}-${{ matrix.arch }}
+    
+      - name: Build with GCC
+        run: |
+          xmake f -v -a ${{ matrix.arch }} --toolchain=gcc -y
+          xmake -vD -y
+
+      - name: Run tests
+        run: |
+          xmake test -v
