@@ -1,0 +1,155 @@
+module;
+
+#include <GLFW/glfw3.h>
+#include <vulkan/vulkan_core.h>
+
+#include <cstdint>
+#include <expected>
+#include <memory>
+#include <ranges>
+#include <vector>
+
+export module window;
+
+export enum struct WindowError {
+    InitialisationFailure,
+    InstantiationFailure,
+    InstanceCreationFailure,
+    SurfaceCreationFailure,
+    UnsupportedGpu,
+    LimitedGpu,
+};
+
+export struct Dimensions {
+    size_t width;
+    size_t height;
+};
+
+class GlfwManager {
+public:
+    static constexpr auto initialise() noexcept
+        -> std::expected<void, WindowError> {
+        static auto result = glfwInit();
+        if (!result) return std::unexpected{WindowError::InitialisationFailure};
+        return {};
+    };
+
+private:
+    constexpr GlfwManager() noexcept = default;
+    constexpr ~GlfwManager() noexcept { glfwTerminate(); };
+};
+
+export class Window {
+public:
+    static constexpr auto
+    create(Dimensions dimensions, std::string title) noexcept
+        -> std::expected<Window, WindowError> {
+        if (auto result = GlfwManager::initialise(); !result) {
+            return std::unexpected{result.error()};
+        }
+
+        // Vulkan doesn't require a window context
+        glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+
+        auto [width, height] = dimensions;
+        auto window =
+            glfwCreateWindow(width, height, title.c_str(), nullptr, nullptr);
+
+        if (!window) {
+            return std::unexpected{WindowError::InstantiationFailure};
+        }
+
+        auto appInfo = VkApplicationInfo{
+            .sType              = VK_STRUCTURE_TYPE_APPLICATION_INFO,
+            .pApplicationName   = title.c_str(),
+            .applicationVersion = VK_MAKE_VERSION(0, 1, 0),
+            .pEngineName        = "No Engine",
+            .engineVersion      = VK_MAKE_VERSION(1, 0, 0),
+            .apiVersion         = VK_API_VERSION_1_0,
+        };
+
+        auto glfwExtensionCount = static_cast<uint32_t>(0);
+        auto glfwExtensions =
+            glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
+
+        auto createInfo = VkInstanceCreateInfo{
+            .sType                   = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,
+            .pApplicationInfo        = &appInfo,
+            .enabledLayerCount       = 0,
+            .enabledExtensionCount   = glfwExtensionCount,
+            .ppEnabledExtensionNames = glfwExtensions,
+        };
+
+        Instance instance;
+        if (vkCreateInstance(&createInfo, nullptr, &instance) != VK_SUCCESS) {
+            return std::unexpected{WindowError::InstanceCreationFailure};
+        }
+
+        uint32_t deviceCount = 0;
+
+        vkEnumeratePhysicalDevices(instance, &deviceCount, nullptr);
+
+        if (deviceCount == 0) {
+            return std::unexpected{WindowError::UnsupportedGpu};
+        }
+
+        auto devices = std::vector<VkPhysicalDevice>(deviceCount);
+        vkEnumeratePhysicalDevices(instance, &deviceCount, devices.data());
+
+        auto isSuitableDevice = [](auto device) { return true; };
+        auto suitableDevices  = devices | std::views::filter(isSuitableDevice) |
+                               std::ranges::to<std::vector>();
+
+        if (suitableDevices.size() <= 0) {
+            return std::unexpected{WindowError::LimitedGpu};
+        }
+
+        auto physicalDevice = suitableDevices.front();
+
+        auto queueCreateInfo = VkDeviceQueueCreateInfo{
+            .sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
+        };
+
+        // SurfaceHandle surfaceHandle;
+        // if (glfwCreateWindowSurface(instance, window, nullptr,
+        //                             &surfaceHandle)) {
+        //     return std::unexpected{WindowError::SurfaceCreationFailure};
+        // }
+
+        auto windowHandle = WindowHandle{window, windowDeleter};
+        return Window{dimensions, instance, windowHandle};
+    }
+
+    constexpr auto clear() const noexcept {
+        // glClear(GL_COLOR_BUFFER_BIT);
+    }
+
+    constexpr auto swapBuffers() const noexcept {
+        // glfwSwapBuffers(windowHandle.get());
+    }
+
+    constexpr auto pollEvents() { glfwPollEvents(); }
+
+    constexpr Window(Window&&) noexcept            = default;
+    constexpr Window& operator=(Window&&) noexcept = delete;
+
+    constexpr ~Window() noexcept { vkDestroyInstance(instance, nullptr); }
+
+private:
+    constexpr Window(auto&& dimensions, auto&& instance, auto&& window) noexcept
+        : dimensions(dimensions),
+          instance(instance),
+          windowHandle(std::move(window)) {}
+
+    static constexpr auto windowDeleter =
+        [](GLFWwindow* window) noexcept -> void { glfwDestroyWindow(window); };
+
+    using WindowHandle  = std::unique_ptr<GLFWwindow, decltype(windowDeleter)>;
+    using SurfaceHandle = VkSurfaceKHR;
+    using Instance      = VkInstance;
+
+    Dimensions   dimensions;
+    Instance     instance;
+    WindowHandle windowHandle;
+    // SurfaceHandle surfaceHandle;
+};

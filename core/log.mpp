@@ -1,0 +1,70 @@
+module;
+
+#include <iostream>
+#include <string_view>
+#include <utility>
+
+export module log;
+
+export class Logger {
+public:
+    enum class Level {
+        Fatal,
+        Error,
+        Warning,
+        Info,
+        Trace,
+        Debug,
+    };
+
+    struct Options {
+        Level level;
+    };
+
+    constexpr Logger(Options options) : options(options) {}
+
+    constexpr auto fatal(std::string_view str) const { log(Level::Fatal, str); }
+
+    constexpr auto error(std::string_view str) const { log(Level::Error, str); }
+
+    constexpr auto warning(std::string_view str) const {
+        log(Level::Warning, str);
+    }
+
+    constexpr auto info(std::string_view str) const { log(Level::Info, str); }
+
+    constexpr auto trace(std::string_view str) const { log(Level::Trace, str); }
+
+    constexpr auto debug(std::string_view str) const { log(Level::Debug, str); }
+
+private:
+    constexpr auto log(Level level, std::string_view str) const -> void {
+        if (this->options.level < level) {
+            return;
+        }
+
+        std::cout << levelToString(level) << ": " << str << '\n';
+    }
+
+    [[nodiscard]] constexpr auto levelToString(const Level& level) const
+        -> std::string_view {
+        switch (level) {
+            case Level::Fatal:
+                return "FATAL";
+            case Level::Error:
+                return "ERROR";
+            case Level::Warning:
+                return "WARNING";
+            case Level::Info:
+                return "INFO";
+            case Level::Trace:
+                return "TRACE";
+            case Level::Debug:
+                return "DEBUG";
+            default:
+                std::unreachable();
+        }
+    }
+
+    Options options;
+};
