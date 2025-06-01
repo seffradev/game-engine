@@ -4,8 +4,8 @@ import window;
 import log;
 
 int main(int, char **) {
-    Logger logger{Logger::Level::Trace};
-    logger.log(Logger::Level::Info, "Hello, world!");
+    auto logger = Logger{Logger::Options{Logger::Level::Trace}};
+    logger.info("Hello, world!");
 
     auto window = Window::create({640, 480}, "Test");
     if (!window) {

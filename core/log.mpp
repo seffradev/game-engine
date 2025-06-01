@@ -23,22 +23,33 @@ public:
 
     constexpr Logger(Options options) : options(options) {}
 
-    constexpr auto fatal(std::string_view str) const { log(Level::Fatal, str); }
+    constexpr auto fatal(std::string_view str) const {
+        log(Level::Fatal, str);
+    }
 
-    constexpr auto error(std::string_view str) const { log(Level::Error, str); }
+    constexpr auto error(std::string_view str) const {
+        log(Level::Error, str);
+    }
 
     constexpr auto warning(std::string_view str) const {
         log(Level::Warning, str);
     }
 
-    constexpr auto info(std::string_view str) const { log(Level::Info, str); }
+    constexpr auto info(std::string_view str) const {
+        log(Level::Info, str);
+    }
 
-    constexpr auto trace(std::string_view str) const { log(Level::Trace, str); }
+    constexpr auto trace(std::string_view str) const {
+        log(Level::Trace, str);
+    }
 
-    constexpr auto debug(std::string_view str) const { log(Level::Debug, str); }
+    constexpr auto debug(std::string_view str) const {
+        log(Level::Debug, str);
+    }
 
 private:
-    constexpr auto log(Level level, std::string_view str) const -> void {
+    constexpr auto log(Level level, std::string_view str) const
+        -> void {
         if (this->options.level < level) {
             return;
         }
@@ -46,8 +57,8 @@ private:
         std::cout << levelToString(level) << ": " << str << '\n';
     }
 
-    [[nodiscard]] constexpr auto levelToString(const Level& level) const
-        -> std::string_view {
+    [[nodiscard]] constexpr auto
+    levelToString(const Level& level) const -> std::string_view {
         switch (level) {
             case Level::Fatal:
                 return "FATAL";

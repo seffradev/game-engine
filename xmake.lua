@@ -5,6 +5,7 @@ set_languages("cxxlatest")
 
 add_requires("gtest", {
   system = false,
+  ---@diagnostic disable-next-line: missing-fields
   configs = {
     main = true,
     gmock = true,
@@ -13,10 +14,13 @@ add_requires("gtest", {
 
 add_repositories("seffradev https://github.com/seffradev/xmake-repo.git")
 
+add_requires("glew~2.2.0")
+
 add_requires("seffradev::glfw~3.4", {
   system = false,
+  ---@diagnostic disable-next-line: missing-fields
   configs = {
-    glfw_include = "vulkan",
+    glfw_include = "system",
     x11 = false,
     wayland = true,
   },
@@ -33,16 +37,18 @@ end
 
 target("core")
 set_kind("static")
+add_headerfiles("core/**.hpp")
 add_files("core/**.mpp", { public = true })
 set_policy("build.c++.modules", true)
 
 target("renderer")
 set_kind("static")
+add_headerfiles("renderer/**.hpp")
 add_files("renderer/**.mpp", { public = true })
 set_policy("build.c++.modules", true)
 add_deps("core")
-add_packages("glfw")
-add_links("glfw", "vulkan")
+add_packages("glfw", "glew")
+add_links("glfw")
 add_defines("GLFW_INCLUDE_VULKAN")
 
 target("sandbox")
@@ -65,3 +71,18 @@ for _, file in ipairs(os.files("tests/**.cpp")) do
   add_tests("default")
   set_policy("build.c++.modules", true)
 end
+
+includes("@builtin/xpack")
+
+xpack("core")
+set_formats("zip")
+add_targets("core")
+
+xpack("renderer")
+set_formats("zip")
+add_targets("renderer")
+
+xpack("sandbox")
+set_formats("zip")
+add_targets("sandbox")
+set_author("Hampus Avekvist")
